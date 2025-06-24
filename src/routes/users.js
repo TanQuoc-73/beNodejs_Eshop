@@ -129,12 +129,21 @@ router.post('/login', async (req, res) => {
     // Lấy thông tin profile
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
-      .select(`
-        *,
-        addresses:user_addresses(*)
-      `)
+      .select('*')
       .eq('id', userId)
       .single();
+
+    // Lấy địa chỉ riêng nếu cần
+    const { data: addresses } = await supabase
+      .from('user_addresses')
+      .select('*')
+      .eq('user_id', userId);
+
+    // Kết hợp dữ liệu
+    const userProfile = {
+      ...profile,
+      addresses: addresses || []
+    };
 
     if (profileError) throw profileError;
 
@@ -151,11 +160,15 @@ router.post('/login', async (req, res) => {
       .update({ last_login: new Date().toISOString() })
       .eq('id', userId);
 
+    // Trả về thông tin user và token
     res.json({
       user: {
         id: userId,
         email: authData.user.email,
-        ...profile
+        name: userProfile.first_name + ' ' + userProfile.last_name,
+        phone: userProfile.phone,
+        avatar: userProfile.avatar_url,
+        addresses: userProfile.addresses || []
       },
       token
     });

@@ -3,6 +3,7 @@ const cors = require('./middlewares/cors');
 const brandsRouter = require('./routes/brands');
 const cartRouter = require('./routes/cart');
 const usersRouter = require('./routes/users');
+const healthRouter = require('./routes/health');
 const { sessionMiddleware } = require('./middlewares/session');
 
 const app = express();
@@ -16,6 +17,7 @@ app.use(sessionMiddleware);
 app.use('/api/brands', brandsRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/auth', usersRouter);
+app.use('/api', healthRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
