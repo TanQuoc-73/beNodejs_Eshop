@@ -1,15 +1,21 @@
 const express = require('express');
 const cors = require('./middlewares/cors');
 const brandsRouter = require('./routes/brands');
+const cartRouter = require('./routes/cart');
+const usersRouter = require('./routes/users');
+const { sessionMiddleware } = require('./middlewares/session');
 
 const app = express();
 
 // Middleware
 app.use(cors);
 app.use(express.json());
+app.use(sessionMiddleware);
 
 // Routes
 app.use('/api/brands', brandsRouter);
+app.use('/api/cart', cartRouter);
+app.use('/api/auth', usersRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
