@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const supabase = require('../config/db');
+const { supabaseAdmin } = require('../config/db');
 const crypto = require('crypto');
 
 // Middleware to get session ID from headers or generate one
@@ -30,21 +30,116 @@ const getUserId = (req) => {
 // Get cart items for current user/session
 router.get('/', async (req, res) => {
   try {
+    // Log thông tin request
+    console.log('Fetching cart:', {
+      method: req.method,
+      url: req.url,
+      headers: Object.keys(req.headers).length > 0 ? Object.keys(req.headers).slice(0, 3) : 'No headers',
+      user: req.user ? 'authenticated' : 'guest',
+      sessionID: req.headers['session-id'] || 'no-session'
+    });
+
     // Get session ID from headers
     const sessionID = req.headers['session-id'];
     
     // If no session ID and no user, return empty cart
     if (!sessionID && !req.user) {
+      console.log('Empty cart - no session and no user');
       return res.json([]);
     }
 
-    const { data, error } = await supabase
+    // Sử dụng supabaseAdmin để có quyền truy cập
+    const { data, error } = await supabaseAdmin
       .from('cart_items')
-      .select('*, products (*), product_variants (*)')
-      .or(`user_id.eq.${req.user?.id},session_id.eq.${sessionID}`)
+      .select(`
+        id,
+        user_id,
+        session_id,
+        product_id,
+        variant_id,
+        quantity,
+        created_at,
+        updated_at,
+        products (
+          id,
+          name,
+          description,
+          price,
+          image_url,
+          brand_id,
+          created_at,
+          updated_at
+        ),
+        product_variants (
+          id,
+          product_id,
+          name,
+          price,
+          stock,
+          image_url,
+          created_at,
+          updated_at
+        )
+      `)
+      .eq('session_id', sessionID)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    // Kiểm tra kết quả
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
+
+    // Nếu không có items và người dùng đã đăng nhập, tìm items theo user_id
+    if (!data || data.length === 0) {
+      if (req.user && req.user.id) {
+        const { data: userData, error: userError } = await supabaseAdmin
+          .from('cart_items')
+          .select(`
+            id,
+            user_id,
+            session_id,
+            product_id,
+            variant_id,
+            quantity,
+            created_at,
+            updated_at,
+            products (
+              id,
+              name,
+              description,
+              price,
+              image_url,
+              brand_id,
+              created_at,
+              updated_at
+            ),
+            product_variants (
+              id,
+              product_id,
+              name,
+              price,
+              stock,
+              image_url,
+              created_at,
+              updated_at
+            )
+          `)
+          .eq('user_id', req.user.id)
+          .order('created_at', { ascending: false });
+
+        if (userError) {
+          console.error('Error fetching user cart:', userError);
+          throw userError;
+        }
+
+        if (userData && userData.length > 0) {
+          data = userData;
+        }
+      }
+    }
+    
+    console.log('Fetched cart items:', data.length);
     res.json(data);
   } catch (error) {
     res.status(500).json({ error: error.message });
