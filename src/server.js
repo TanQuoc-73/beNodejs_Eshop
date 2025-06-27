@@ -1,20 +1,19 @@
 const express = require('express');
 const cors = require('./middlewares/cors');
-const brandsRouter = require('./routes/brands');
+const sessionMiddleware = require('./middlewares/session');
 const cartRouter = require('./routes/cart');
 const usersRouter = require('./routes/users');
 const healthRouter = require('./routes/health');
-const { sessionMiddleware } = require('./middlewares/session');
 
 const app = express();
 
 // Middleware
 app.use(cors);
 app.use(express.json());
-app.use(sessionMiddleware);
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Routes
-app.use('/api/brands', brandsRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/auth', usersRouter);
 app.use('/api', healthRouter);

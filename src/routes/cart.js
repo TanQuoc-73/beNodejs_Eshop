@@ -146,8 +146,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Add item to cart
-router.post('/', async (req, res) => {
+// POST /cart/items - Add item to cart
+router.post('/items', async (req, res) => {
   try {
     const { product_id, variant_id, quantity = 1 } = req.body;
     
@@ -156,7 +156,7 @@ router.post('/', async (req, res) => {
     }
 
     // Get product price
-    const { data: product, error: productError } = await supabase
+    const { data: product, error: productError } = await supabaseAdmin
       .from('products')
       .select('price, sale_price')
       .eq('id', product_id)

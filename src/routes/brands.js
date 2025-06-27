@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
         const { data, error } = await supabaseAdmin
             .from('brands')
             .select(`
-              id,
+              id,z
               name,
               description,
               logo_url,
